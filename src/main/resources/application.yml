@@ -48,7 +48,9 @@ mybatis:
 
 # redis
 redis:
-  host: 127.0.0.1
+  password: Root@123456
+  dataBase: 1
+  host: 47.109.23.108
   port: 6379
 #客户端超时时间单位是毫秒 默认是2000
   timeout: 3000
@@ -88,16 +90,16 @@ spring:
   profiles: dev
   datasource:
     druid:
-      url: jdbc:mysql:///minzuchess?characterEncoding=utf8&useSSL=false&serverTimezone=GMT&serverTimezone=Asia/Shanghai
+      url: jdbc:mysql://47.109.23.108:3306/minzuchess?characterEncoding=utf8&useSSL=false&serverTimezone=GMT&serverTimezone=Asia/Shanghai
       username: root
-      password: 
+      password: Root@123456
       driver-class-name: com.mysql.cj.jdbc.Driver
       initial-size: 10
       max-active: 20
       max-wait: 3000
 
 server:
-  port: 8080
+  port: 8088
 logging:
   level:
    root: info

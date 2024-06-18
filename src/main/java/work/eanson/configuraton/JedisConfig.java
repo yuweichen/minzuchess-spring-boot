@@ -52,7 +52,7 @@ public class JedisConfig {
 
     @Bean
     JedisPool jedisPool() {
-        return new JedisPool(jedisPoolConfig(), host, port, timeout);
+        return new JedisPool(jedisPoolConfig(), host, port, timeout,"Root@123456",1);
     }
 
 }

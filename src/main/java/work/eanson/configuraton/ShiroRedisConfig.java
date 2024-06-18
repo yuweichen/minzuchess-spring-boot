@@ -1,17 +1,22 @@
 package work.eanson.configuraton;
 
 import org.apache.shiro.session.mgt.SessionManager;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.spring.web.config.DefaultShiroFilterChainDefinition;
 import org.apache.shiro.spring.web.config.ShiroFilterChainDefinition;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.crazycake.shiro.RedisCacheManager;
+import org.crazycake.shiro.RedisManager;
 import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import redis.clients.jedis.JedisPool;
 import work.eanson.service.realm.LoginRealm;
+
+import javax.annotation.Resource;
 
 
 /**
@@ -28,22 +33,52 @@ import work.eanson.service.realm.LoginRealm;
 @Configuration
 public class ShiroRedisConfig {
 
-    /**
-     * 注入RedisSessionDAO
-     */
-    @Autowired
-    RedisSessionDAO redisSessionDAO;
+//    /**
+//     * 注入RedisSessionDAO
+//     */
+//    @Autowired
+//    RedisSessionDAO redisSessionDAO;
+//
+//    @Autowired
+//    RedisCacheManager redisCacheManager;
 
-    @Autowired
-    RedisCacheManager redisCacheManager;
+    @Resource
+    private JedisPool jedisPool;
 
     @Bean
     LoginRealm loginRealm() {
         return new LoginRealm();
     }
 
+
     @Bean
-    public SessionManager sessionManager() {
+    public RedisManager redisManager() {
+        RedisManager redisManager = new RedisManager();
+        redisManager.setJedisPool(jedisPool);
+//        redisManager.setHost("localhost:6379");
+        return redisManager;
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisManager redisManager) {
+        RedisCacheManager cacheManager = new RedisCacheManager();
+        cacheManager.setRedisManager(redisManager);
+        return cacheManager;
+    }
+
+    @Bean
+    public RedisSessionDAO redisSessionDAO(RedisManager redisManager) {
+        RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
+        redisSessionDAO.setRedisManager(redisManager);
+        return redisSessionDAO;
+    }
+
+    @Bean
+    public SessionDAO sessionDAO(RedisSessionDAO redisSessionDAO) {
+        return redisSessionDAO;
+    }
+    @Bean
+    public SessionManager sessionManager(SessionDAO redisSessionDAO) {
         DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
 
         // inject redisSessionDAO
@@ -52,18 +87,18 @@ public class ShiroRedisConfig {
     }
 
     @Bean
-    DefaultWebSecurityManager securityManager(SessionManager sessionManager) {
+    DefaultWebSecurityManager securityManager(RedisCacheManager cacheManager, SessionDAO sessionDAO) {
         DefaultWebSecurityManager defaultWebSecurityManager = new DefaultWebSecurityManager();
         defaultWebSecurityManager.setRealm(loginRealm());
 
         //inject sessionManager
-        defaultWebSecurityManager.setSessionManager(sessionManager);
+        defaultWebSecurityManager.setSessionManager(sessionManager(sessionDAO));
 
 //        用手机号作为session ID
-        redisCacheManager.setPrincipalIdFieldName("telephone");
+        cacheManager.setPrincipalIdFieldName("telephone");
 
         // inject redisCacheManager
-        defaultWebSecurityManager.setCacheManager(redisCacheManager);
+        defaultWebSecurityManager.setCacheManager(cacheManager);
         return defaultWebSecurityManager;
     }
 
